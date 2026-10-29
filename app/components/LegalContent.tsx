@@ -13,7 +13,7 @@ const permissions = [
 export default async function LegalContent({slug}:{slug:string}) {
  const source=await readFile(path.join(process.cwd(),"content/source",`${slug}.html`),"utf8");
  let body=source.replace(/^<header>[\s\S]*?<\/header>/,"").replace('https://tools.google.com/dlpage/gaoutout','https://tools.google.com/dlpage/gaoptout');
- body=body.replaceAll("support@arineecosystem.com","arine.soem@gmail.com")
+ body=body.replaceAll("https://development.arineecosystem.com","https://app.arineecosystem.com").replaceAll("support@arineecosystem.com","arine.soem@gmail.com")
   .replaceAll('<a>arine.soem@gmail.com</a>','<a href="mailto:arine.soem@gmail.com">arine.soem@gmail.com</a>')
   .replaceAll('<a>Submit Refund Ticket</a>','<a href="mailto:arine.soem@gmail.com?subject=Refund%20request">Submit Refund Ticket</a>');
  return <><aside className={styles.legalDraft}><strong>Policy update in review</strong><p>The existing published wording below is preserved. The October 29, 2026 verification pack’s additions follow separately. Its referenced replacement legal texts and exact Limited Use sentence were not included in the supplied PDF. These revisions are not a published replacement policy.</p><p>The original “Last updated” date remains unchanged. A new publication date will be set only when the revised policy is actually published.</p></aside><article className={styles.legalDocument} dangerouslySetInnerHTML={{__html:body}}/>

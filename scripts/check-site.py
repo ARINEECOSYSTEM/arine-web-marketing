@@ -12,6 +12,7 @@ for route in sorted(paths):
  tree=html.fromstring(file.read_text())
  def check(condition,note):
   if not condition:failures.append(route+': '+note)
+ check(not tree.xpath('//a[contains(@href,"development.arineecosystem.com")]'),'development application link remains')
  check(len(tree.xpath('//h1'))==1,'must have exactly one h1')
  check(bool(tree.xpath('//title/text()')),'missing title')
  check(bool(tree.xpath('//meta[@name="description"]/@content')),'missing description')
@@ -24,7 +25,7 @@ for route in sorted(paths):
  if route.startswith('/services/') and route.split('/')[-1] in {'store-management','cfo','crm','seo','geo'}:
   check('Coming Soon' in tree.text_content(),'missing coming-soon status')
   check(not tree.xpath('//main//button|//main//form'),'coming-soon page has conversion control')
-  check(not tree.xpath('//a[contains(@href,"mailto:")]|//a[contains(@href,"/signup")]|//a[contains(@href,"development.arineecosystem.com")]'),'coming-soon page has signup/contact action')
+  check(not tree.xpath('//a[contains(@href,"mailto:")]|//a[contains(@href,"/signup")]|//a[contains(@href,"development.arineecosystem.com")]|//a[contains(@href,"app.arineecosystem.com")]'),'coming-soon page has signup/contact action')
  if route=='/pricing':
   text=tree.text_content()
   for pair in [('₹3,000','1,200'),('₹11,000','3,450'),('₹15,000','7,800')]:

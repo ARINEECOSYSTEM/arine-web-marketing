@@ -16,7 +16,7 @@ const nextConfig: NextConfig = {
   },
   env: {
     APP_WEBSITE:
-      process.env.APP_WEBSITE || "https://development.arineecosystem.com/",
+      process.env.APP_WEBSITE || "https://app.arineecosystem.com/",
   },
 };
 

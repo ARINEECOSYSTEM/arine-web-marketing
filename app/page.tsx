@@ -1,8 +1,9 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import styles from "./page.module.css";
 import { SiteHeader, SiteFooter } from "./components/SiteChrome";
+import { normalizeStoreUrl } from "./lib/store-connection";
 
 function Donut({ values }: { values: number[] }) { const total = values.reduce((a, b) => a + b, 0) || 1; const radius = 74; const circumference = 2 * Math.PI * radius; const offsets = values.map((_, i) => values.slice(0, i).reduce((sum, value) => sum + (value / total) * circumference, 0)); return <div className={styles.donutWrap}><svg viewBox="0 0 190 190" className={styles.donut}><circle cx="95" cy="95" r={radius} fill="none" stroke="#eef0ed" strokeWidth="24" /><g transform="rotate(-90 95 95)">{values.map((value, i) => { const length = (value / total) * circumference; return <circle key={i} cx="95" cy="95" r={radius} fill="none" stroke={['#004c50', '#76a99d', '#8db8d0'][i]} strokeWidth="24" strokeDasharray={`${length} ${circumference - length}`} strokeDashoffset={-offsets[i]} />; })}</g><text x="95" y="92" textAnchor="middle" className={styles.donutValue}>Revenue</text><text x="95" y="110" textAnchor="middle" className={styles.donutSub}>mix</text></svg></div>; }
 
@@ -67,15 +68,25 @@ function CalculatorControl({ label, value, onChange, min, max, step, prefix, suf
 }
 
 export default function Home() {
- const [url, setUrl] = useState(""); const [visitors, setVisitors] = useState(299000); const [conversion, setConversion] = useState(2.5); const [aov, setAov] = useState(80); const [repeat, setRepeat] = useState(0.2); const [mrr, setMrr] = useState(5000);
+ const [url, setUrl] = useState("");
+ const [connectError, setConnectError] = useState("");
+ const [isConnecting, setIsConnecting] = useState(false);
+ useEffect(() => {
+   const resetConnection = () => setIsConnecting(false);
+   window.addEventListener("pageshow", resetConnection);
+   return () => window.removeEventListener("pageshow", resetConnection);
+ }, []); const [visitors, setVisitors] = useState(299000); const [conversion, setConversion] = useState(2.5); const [aov, setAov] = useState(80); const [repeat, setRepeat] = useState(0.2); const [mrr, setMrr] = useState(5000);
   const calc = useMemo(() => { const orders = visitors * conversion / 100; const sales = orders * aov; const repeatRevenue = sales * repeat; const monthly = sales + repeatRevenue + mrr; return { orders, sales, repeatRevenue, monthly, annual: monthly * 12, rpv: visitors > 0 ? monthly / visitors : 0 }; }, [visitors, conversion, aov, repeat, mrr]);
-  const connect = (e: FormEvent) => {
-    e.preventDefault();
-    const website = url.trim();
-    if (!website) return;
-    const signupUrl = new URL("/signup", process.env.APP_WEBSITE);
-    signupUrl.searchParams.set("website", website);
-    window.location.assign(signupUrl.toString());
+  const connect = (event: FormEvent<HTMLFormElement>) => {
+    try {
+      normalizeStoreUrl(url);
+      setConnectError("");
+      setIsConnecting(true);
+      // Keep the native GET submission: it works before hydration and without JavaScript.
+    } catch (error) {
+      event.preventDefault();
+      setConnectError(error instanceof Error ? error.message : "Enter a valid store URL.");
+    }
   };
   const money = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
   const controls: { label: string; value: number; onChange: (value: number) => void; min: number; max: number; step: number; hint: string; prefix?: string; suffix?: string }[] = [
@@ -86,7 +97,7 @@ export default function Home() {
     { label: "Monthly recurring revenue", value: mrr, onChange: setMrr, min: 0, max: 50000, step: 500, hint: "Existing monthly revenue", prefix: "$" },
   ];
   return <div className={styles.page}><a href="#main-content" className={styles.skipLink}>Skip to content</a><SiteHeader /><main id="top"><div id="main-content" tabIndex={-1} />
-    <section className={styles.hero}><div className={styles.heroCopy}><form className={styles.urlForm} onSubmit={connect}><input required aria-label="Store URL" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="Paste your store URL" /><button type="submit">Connect <span>→</span></button></form><h1>META<br /><span>on <em>Autopilot</em></span><span className={styles.heroPeriod}>.</span></h1><p>Research, launch and optimise Meta campaigns from one system.</p></div></section>
+    <section className={styles.hero}><div className={styles.heroCopy}><form id="store-connect" className={styles.urlForm} action="/connect" method="get" onSubmit={connect}><input required name="website" aria-label="Store URL" inputMode="url" autoComplete="url" autoCapitalize="none" spellCheck={false} maxLength={2048} aria-invalid={Boolean(connectError)} aria-describedby={connectError ? "store-url-error" : undefined} value={url} onChange={(e) => {setUrl(e.target.value);setConnectError("");setIsConnecting(false);}} placeholder="Paste your store URL" /><button type="submit" disabled={isConnecting}>{isConnecting ? "Connecting…" : "Connect"} <span aria-hidden="true">→</span></button></form>{connectError && <p id="store-url-error" className={styles.connectError} role="alert">{connectError}</p>}<h1>META<br /><span>on <em>Autopilot</em></span><span className={styles.heroPeriod}>.</span></h1><p>Research, launch and optimise Meta campaigns from one system.</p></div></section>
     <div className={styles.railIntro}><span>FROM INSIGHT TO IMPACT</span><span>A considered campaign workflow</span></div><section className={styles.cardRail} id="products">{[["01","Research","Understand your product, audience and campaign context."],["02","Plan","Bring strategy, message and creative direction together."],["03","Prepare","Develop campaign assets and review the details."],["04","Review","Keep approval and spending decisions with your team."]].map(([number,title,text])=><article key={number} className={styles.workflowCard}><span>{number} / WORKFLOW</span><h2>{title}</h2><p>{text}</p><a href="/services/meta-automation">Explore Meta Automation ↗</a></article>)}</section>
     <section className={styles.engine} id="about"><div className={styles.sectionHead}><div><span className={styles.eyebrow}>BUILT IN, NOT BOLTED ON</span><h2>Creative Engine</h2><p>Create, test and improve creatives faster.</p></div><a className={styles.primaryButton} href={process.env.APP_WEBSITE}>Generate Creative</a></div>
       <p className={styles.exampleNote}>Illustrative creative concepts and sample customer scenarios.</p><div className={styles.engineGrid}>
