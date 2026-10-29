@@ -7,10 +7,20 @@ export function normalizeStoreUrl(input: string): string {
  if(!['https:','http:'].includes(url.protocol)||url.username||url.password||!url.hostname.includes('.')||!url.hostname.split('.').every(part=>/^[a-z\d](?:[a-z\d-]*[a-z\d])?$/i.test(part)))throw new Error("Enter a valid store URL, such as yourstore.com.");
  return url.href;
 }
+export function normalizeAppWebsite(appWebsite=DEFAULT_APP_WEBSITE): string {
+ const configured=appWebsite.trim();
+ if(!configured||/\s/.test(configured))return DEFAULT_APP_WEBSITE;
+ try {
+  const candidate=configured.startsWith('//')?`https:${configured}`:/^[a-z][a-z\d+.-]*:\/\//i.test(configured)?configured:`https://${configured}`;
+  const base=new URL(candidate);
+  if(!['https:','http:'].includes(base.protocol)||base.username||base.password||!base.hostname)return DEFAULT_APP_WEBSITE;
+  return `${base.origin}/`;
+ } catch {
+  return DEFAULT_APP_WEBSITE;
+ }
+}
 export function getAppLoginUrl(appWebsite=DEFAULT_APP_WEBSITE): string {
- const target=new URL('/login',appWebsite||DEFAULT_APP_WEBSITE);
- if(!['https:','http:'].includes(target.protocol))throw new Error("Application URL must use HTTP or HTTPS.");
- return target.href;
+ return new URL('/login',normalizeAppWebsite(appWebsite)).href;
 }
 export function buildStoreLoginUrl(input='',appWebsite=DEFAULT_APP_WEBSITE):string {
  const target=new URL(getAppLoginUrl(appWebsite));
