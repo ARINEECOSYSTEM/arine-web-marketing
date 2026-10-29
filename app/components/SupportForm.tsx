@@ -1,0 +1,12 @@
+"use client";
+import { useState, type FormEvent } from "react";
+import styles from "../interior.module.css";
+export default function SupportForm({enabled=false}:{enabled?:boolean}) {
+ const [state,setState]=useState<"idle"|"sending"|"success"|"error">("idle");const [message,setMessage]=useState("");
+ async function submit(event:FormEvent<HTMLFormElement>) {
+  event.preventDefault();if(state==="sending"||!enabled)return;const form=event.currentTarget;const data=new FormData(form);setState("sending");setMessage("");
+  try {const response=await fetch("/api/support",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(Object.fromEntries(data))});const result=await response.json().catch(()=>({error:"We couldn’t confirm delivery. Please email or WhatsApp support."}));if(!response.ok||result.delivered!==true)throw new Error(result.error||"We couldn’t send your request. Please email or WhatsApp support.");setState("success");setMessage("Your request was delivered to support.");form.reset();}
+  catch(error){setState("error");setMessage(error instanceof Error?error.message:"Your request was not sent. Please use email or WhatsApp.");}
+ }
+ return <form className={styles.supportForm} onSubmit={submit}><h2>Tell us what’s happening.</h2><p>Include the steps you took and any error message. Never send passwords, access tokens or payment details.</p>{!enabled&&<p className={styles.formNotice}>Form delivery is being connected. Please use the email or WhatsApp links above for support.</p>}<div className={styles.formGrid}><label>Name<input name="name" autoComplete="name" required maxLength={120}/></label><label>Email<input name="email" type="email" autoComplete="email" required maxLength={254}/></label></div><label>Issue category<select name="category" required defaultValue=""><option value="" disabled>Select a category</option>{["Sign-in","Integrations","Credits and billing","Data and privacy","Other"].map(c=><option key={c}>{c}</option>)}</select></label><label>Message<textarea name="message" required minLength={10} maxLength={5000} rows={6}/></label><div className={styles.honeypot} aria-hidden="true"><label>Website<input name="website" tabIndex={-1} autoComplete="off"/></label></div><button type="submit" disabled={state==="sending"||!enabled}>{state==="sending"?"Sending…":"Send support request"} <span aria-hidden="true">↗</span></button>{message&&<p className={state==="error"?styles.formError:styles.formSuccess} role={state==="error"?"alert":"status"}>{message}</p>}</form>;
+}

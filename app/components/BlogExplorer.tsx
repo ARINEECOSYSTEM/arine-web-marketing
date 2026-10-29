@@ -1,0 +1,12 @@
+"use client";
+import { useMemo, useState } from "react";
+import styles from "../interior.module.css";
+export type BlogSummary = {slug:string;title:string;excerpt:string;category:string;date:string;readTime:string};
+export function formatDate(date:string) { return new Intl.DateTimeFormat("en-IN",{day:"numeric",month:"long",year:"numeric",timeZone:"UTC"}).format(new Date(date+"T00:00:00Z")); }
+export default function BlogExplorer({posts}:{posts:BlogSummary[]}) {
+ const [query,setQuery]=useState("");const [category,setCategory]=useState("All");const [page,setPage]=useState(1);
+ const categories=["All",...new Set(posts.map(p=>p.category))];
+ const filtered=useMemo(()=>posts.filter(p=>(category==="All"||p.category===category)&&`${p.title} ${p.excerpt} ${p.category}`.toLowerCase().includes(query.trim().toLowerCase())),[posts,category,query]);
+ const pages=Math.max(1,Math.ceil(filtered.length/6));
+ return <section className={styles.blogExplorer} aria-label="Blog articles"><div className={styles.blogFilters}><label>Search articles<input type="search" value={query} onChange={e=>{setQuery(e.target.value);setPage(1)}} placeholder="Search growth, ads, automation…"/></label><label>Category<select value={category} onChange={e=>{setCategory(e.target.value);setPage(1)}}>{categories.map(c=><option key={c}>{c}</option>)}</select></label></div><p className={styles.resultCount} role="status">{filtered.length} {filtered.length===1?"article":"articles"}</p><div className={styles.blogGrid}>{filtered.slice((page-1)*6,page*6).map((p,i)=><article className={styles.blogCard} key={p.slug}><a href={`/blogs/${p.slug}`}><div className={styles.articleArt} aria-hidden="true"><span>{p.category}</span><b>{String((page-1)*6+i+1).padStart(2,"0")}</b><i/></div><div className={styles.articleMeta}><span>{p.category}</span><time dateTime={p.date}>{formatDate(p.date)}</time></div><h2>{p.title}</h2><p>{p.excerpt}</p><span className={styles.readArticle}>Read article ↗ <small>{p.readTime}</small></span></a></article>)}</div>{!filtered.length&&<p className={styles.emptyState}>No matching articles. Try another search or category.</p>}{pages>1&&<nav className={styles.pagination} aria-label="Article pages"><button disabled={page===1} onClick={()=>setPage(p=>p-1)}>← Previous</button><span>Page {page} of {pages}</span><button disabled={page===pages} onClick={()=>setPage(p=>p+1)}>Next →</button></nav>}</section>;
+}
