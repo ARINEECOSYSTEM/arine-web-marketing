@@ -1,0 +1,204 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "buildCommand": "",
+  "installCommand": "",
+  "outputDirectory": "dist",
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "redirects": [
+    {
+      "source": "/home",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/blog",
+      "destination": "/blogs",
+      "permanent": true
+    },
+    {
+      "source": "/blog/:slug",
+      "destination": "/blogs/:slug",
+      "permanent": true
+    },
+    {
+      "source": "/help",
+      "destination": "/help-centre",
+      "permanent": true
+    },
+    {
+      "source": "/help-center",
+      "destination": "/help-centre",
+      "permanent": true
+    },
+    {
+      "source": "/privacy-policy",
+      "destination": "/privacy",
+      "permanent": true
+    },
+    {
+      "source": "/refund",
+      "destination": "/refund-policy",
+      "permanent": true
+    },
+    {
+      "source": "/career",
+      "destination": "/careers",
+      "permanent": true
+    },
+    {
+      "source": "/contact",
+      "destination": "/support",
+      "permanent": true
+    },
+    {
+      "source": "/news",
+      "destination": "/blogs",
+      "permanent": true
+    },
+    {
+      "source": "/legal",
+      "destination": "/privacy",
+      "permanent": true
+    },
+    {
+      "source": "/policies",
+      "destination": "/privacy",
+      "permanent": true
+    },
+    {
+      "source": "/guide",
+      "destination": "/blogs",
+      "permanent": true
+    },
+    {
+      "source": "/resources",
+      "destination": "/help-centre",
+      "permanent": true
+    },
+    {
+      "source": "/resources/about",
+      "destination": "/about",
+      "permanent": true
+    },
+    {
+      "source": "/resources/careers",
+      "destination": "/careers",
+      "permanent": true
+    },
+    {
+      "source": "/resources/events",
+      "destination": "/events",
+      "permanent": true
+    },
+    {
+      "source": "/resources/policies",
+      "destination": "/privacy",
+      "permanent": true
+    },
+    {
+      "source": "/services",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/features",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/services/meta-automation",
+      "destination": "/meta-ads-automation",
+      "permanent": true
+    },
+    {
+      "source": "/services/google-automation",
+      "destination": "/google-ads-automation",
+      "permanent": true
+    },
+    {
+      "source": "/services/creative-engine",
+      "destination": "/ai-creative-engine",
+      "permanent": true
+    },
+    {
+      "source": "/services/crm",
+      "destination": "/crm-automation",
+      "permanent": true
+    },
+    {
+      "source": "/services/store-management",
+      "destination": "/store-management-automation",
+      "permanent": true
+    },
+    {
+      "source": "/services/seo",
+      "destination": "/seo-automation",
+      "permanent": true
+    },
+    {
+      "source": "/services/geo",
+      "destination": "/geo-automation",
+      "permanent": true
+    },
+    {
+      "source": "/services/cfo",
+      "destination": "/virtual-cfo",
+      "permanent": true
+    },
+    {
+      "source": "/services/organic-online-campaign",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/services/supply-management",
+      "destination": "/store-management-automation",
+      "permanent": true
+    },
+    {
+      "source": "/features/:slug",
+      "destination": "/services/:slug",
+      "permanent": true
+    }
+  ],
+  "headers": [
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=()"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/connect",
+      "destination": "/api/connect"
+    }
+  ]
+}

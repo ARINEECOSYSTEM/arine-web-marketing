@@ -1,0 +1,17 @@
+# robots.txt for arineecosystem.com
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /signup
+
+# AI and answer-engine crawlers are allowed (supports GEO visibility)
+User-agent: GPTBot
+Allow: /
+User-agent: Google-Extended
+Allow: /
+User-agent: PerplexityBot
+Allow: /
+User-agent: ClaudeBot
+Allow: /
+
+Sitemap: https://arineecosystem.com/sitemap.xml
