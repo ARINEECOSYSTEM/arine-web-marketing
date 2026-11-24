@@ -26,7 +26,9 @@ const css = read('styles.css') + '\n' + read('theme.css');
 // images: move the inline base64 images out to cacheable files
 fs.mkdirSync(path.join(DIST, 'assets/img'), { recursive: true });
 const assetsJs = read('assets.js').replace(/"([a-z0-9_-]+)": "data:image\/(\w+);base64,([^"]*)"/g, (m, k, ext, b64) => {
-  const buf = Buffer.from(b64, 'base64'), name = `assets/img/${k}.${hash(b64)}.${ext}`;
+  // blog images keep their SEO file names under /images/blog/; UI images get hashed names
+  const buf = Buffer.from(b64, 'base64'), name = k.includes('-') ? `images/blog/${k}.${ext}` : `assets/img/${k}.${hash(b64)}.${ext}`;
+  fs.mkdirSync(path.join(DIST, path.dirname(name)), { recursive: true });
   fs.writeFileSync(path.join(DIST, name), buf);
   return `"${k}": "/${name}"`;
 });
@@ -56,7 +58,7 @@ const routes = await (async () => {
   for (const [p, [, t, d]] of Object.entries(POLX)) out.push({ key: 'policy', path: p, title: t, desc: d });
   for (const po of A.POSTS) {
     const pt = (A.PTITLE || {})[po.slug] || po.title;
-    out.push({ key: 'blog-' + po.slug, path: '/blogs/' + po.slug, title: (pt + ' | ARINE Blog').length <= 60 ? pt + ' | ARINE Blog' : pt, desc: po.ex.length > 160 ? po.ex.slice(0, 157).replace(/\s+\S*$/, '') + '…' : po.ex });
+    out.push({ key: 'blog-' + po.slug, path: '/blogs/' + po.slug, image: po.cover ? { src: `/images/blog/${po.cover[0]}.webp`, alt: po.cover[1], w: po.cover[2], h: po.cover[3] } : null, imgs: (po.body || []).filter(b => b[0] === 'img').map(b => ({ src: `/images/blog/${b[1]}.webp`, alt: b[2] })), title: (pt + ' | ARINE Blog').length <= 60 ? pt + ' | ARINE Blog' : pt, desc: po.ex.length > 160 ? po.ex.slice(0, 157).replace(/\s+\S*$/, '') + '…' : po.ex });
   }
   out.push({ key: '404', path: '/404', title: A.SEO['404'][0], desc: A.SEO['404'][1], noindex: true });
   return out;
@@ -76,6 +78,7 @@ const shell = r => {
     .replace(/(<meta property="og:url" content=")[^"]*/, `$1${url}`)
     .replace(/(<meta name="twitter:title" content=")[^"]*/, `$1${esc(r.title)}`)
     .replace(/(<meta name="twitter:description" content=")[^"]*/, `$1${esc(r.desc)}`);
+  if (r.key.startsWith('blog-')) h = h.replace('<meta property="og:type" content="website">', '<meta property="og:type" content="article">');
   if (r.noindex || r.key === 'signup') h = h.replace(/(<meta name="robots" content=")[^"]*/, '$1noindex, follow');
   return `<!doctype html>
 <html lang="en-IN">
@@ -84,7 +87,7 @@ const shell = r => {
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 ${h}
 <meta name="arine-mode" content="paths">
-<meta property="og:image" content="${SITE}/icon-512.png">
+${r.image ? `<meta property="og:image" content="${SITE}${r.image.src}">\n<meta property="og:image:width" content="${r.image.w}">\n<meta property="og:image:height" content="${r.image.h}">\n<meta property="og:image:alt" content="${esc(r.image.alt)}">\n<meta name="twitter:image" content="${SITE}${r.image.src}">\n<link rel="preload" as="image" href="${r.image.src}" fetchpriority="high">` : `<meta property="og:image" content="${SITE}/icon-512.png">`}
 <link rel="icon" type="image/png" sizes="48x48" href="/favicon.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="stylesheet" href="/${cssName}">
@@ -143,7 +146,7 @@ if (chromium) {
 }
 server.close();
 const today = new Date().toISOString().slice(0, 10);
-fs.writeFileSync(path.join(DIST, 'sitemap.xml'), '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
-  routes.filter(r => !r.noindex && r.key !== 'signup').map(r => `  <url><loc>${SITE}${r.path === '/' ? '/' : r.path}</loc><lastmod>${today}</lastmod></url>`).join('\n') + '\n</urlset>\n');
+fs.writeFileSync(path.join(DIST, 'sitemap.xml'), '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n' +
+  routes.filter(r => !r.noindex && r.key !== 'signup').map(r => `  <url><loc>${SITE}${r.path === '/' ? '/' : r.path}</loc><lastmod>${today}</lastmod>${[r.image, ...(r.imgs || [])].filter(Boolean).map(im => `<image:image><image:loc>${SITE}${im.src}</image:loc></image:image>`).join('')}</url>`).join('\n') + '\n</urlset>\n');
 fs.copyFileSync(path.join(DIST, 'sitemap.xml'), path.join(ROOT, 'sitemap.xml'));
 console.log(`done: ${routes.length} pages, ${cssName}, ${jsName}`);
