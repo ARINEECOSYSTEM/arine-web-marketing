@@ -58,7 +58,7 @@ const routes = await (async () => {
   for (const [p, [, t, d]] of Object.entries(POLX)) out.push({ key: 'policy', path: p, title: t, desc: d });
   for (const po of A.POSTS) {
     const pt = (A.PTITLE || {})[po.slug] || po.title;
-    out.push({ key: 'blog-' + po.slug, path: '/blogs/' + po.slug, image: po.cover ? { src: `/images/blog/${po.cover[0]}.webp`, alt: po.cover[1], w: po.cover[2], h: po.cover[3] } : null, imgs: (po.body || []).filter(b => b[0] === 'img').map(b => ({ src: `/images/blog/${b[1]}.webp`, alt: b[2] })), title: (pt + ' | ARINE Blog').length <= 60 ? pt + ' | ARINE Blog' : pt, desc: po.ex.length > 160 ? po.ex.slice(0, 157).replace(/\s+\S*$/, '') + '…' : po.ex });
+    out.push({ key: 'blog-' + po.slug, path: '/blogs/' + po.slug, date: po.date, image: po.cover ? { src: `/images/blog/${po.cover[0]}.webp`, alt: po.cover[1], w: po.cover[2], h: po.cover[3] } : null, imgs: (po.body || []).filter(b => b[0] === 'img').map(b => ({ src: `/images/blog/${b[1]}.webp`, alt: b[2] })), title: (pt + ' | ARINE Blog').length <= 60 ? pt + ' | ARINE Blog' : pt, desc: po.ex.length > 160 ? po.ex.slice(0, 157).replace(/\s+\S*$/, '') + '…' : po.ex });
   }
   out.push({ key: '404', path: '/404', title: A.SEO['404'][0], desc: A.SEO['404'][1], noindex: true });
   return out;
@@ -146,7 +146,26 @@ if (chromium) {
 }
 server.close();
 const today = new Date().toISOString().slice(0, 10);
-fs.writeFileSync(path.join(DIST, 'sitemap.xml'), '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n' +
-  routes.filter(r => !r.noindex && r.key !== 'signup').map(r => `  <url><loc>${SITE}${r.path === '/' ? '/' : r.path}</loc><lastmod>${today}</lastmod>${[r.image, ...(r.imgs || [])].filter(Boolean).map(im => `<image:image><image:loc>${SITE}${im.src}</image:loc></image:image>`).join('')}</url>`).join('\n') + '\n</urlset>\n');
+// sitemaps: one per section + an index at /sitemap.xml
+const FEATURES = ['meta', 'google', 'creative', 'crm', 'store', 'seo', 'geo', 'cfo', 'enterprise'];
+const isoDate = d => { const t = new Date(d); return isNaN(t) ? today : `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`; };
+const urlXml = r => {
+  const pr = r.path === '/' ? '1.0' : r.key === 'pricing' ? '0.9' : FEATURES.includes(r.key) ? '0.9' : r.key === 'blog' ? '0.8' : r.key.startsWith('blog-') ? '0.7' : r.key === 'policy' ? '0.3' : '0.5';
+  const freq = r.path === '/' || r.key === 'blog' ? 'weekly' : r.key.startsWith('blog-') ? 'monthly' : r.key === 'policy' ? 'yearly' : 'monthly';
+  const imgs = [r.image, ...(r.imgs || [])].filter(Boolean).map(im => `\n    <image:image><image:loc>${SITE}${im.src}</image:loc></image:image>`).join('');
+  return `  <url>\n    <loc>${SITE}${r.path === '/' ? '/' : r.path}</loc>\n    <lastmod>${r.date ? isoDate(r.date) : today}</lastmod>\n    <changefreq>${freq}</changefreq>\n    <priority>${pr}</priority>${imgs}\n  </url>`;
+};
+const urlset = list => '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n' + list.map(urlXml).join('\n') + '\n</urlset>\n';
+const indexable = routes.filter(r => !r.noindex && r.key !== 'signup');
+const blogs = indexable.filter(r => r.key.startsWith('blog-')).sort((x, y) => isoDate(y.date) < isoDate(x.date) ? -1 : 1);
+const maps = {
+  'sitemap-pages.xml': indexable.filter(r => !FEATURES.includes(r.key) && !r.key.startsWith('blog')),
+  'sitemap-features.xml': FEATURES.map(k => indexable.find(r => r.key === k)).filter(Boolean),
+  'sitemap-blogs.xml': [indexable.find(r => r.key === 'blog'), ...blogs].filter(Boolean)
+};
+for (const [f, list] of Object.entries(maps)) fs.writeFileSync(path.join(DIST, f), urlset(list));
+fs.writeFileSync(path.join(DIST, 'sitemap.xml'), '<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+  Object.entries(maps).map(([f, list]) => `  <sitemap>\n    <loc>${SITE}/${f}</loc>\n    <lastmod>${list.map(r => r.date ? isoDate(r.date) : today).sort().pop()}</lastmod>\n  </sitemap>`).join('\n') + '\n</sitemapindex>\n');
+console.log('sitemaps:', Object.entries(maps).map(([f, l]) => `${f} (${l.length})`).join(', '));
 fs.copyFileSync(path.join(DIST, 'sitemap.xml'), path.join(ROOT, 'sitemap.xml'));
 console.log(`done: ${routes.length} pages, ${cssName}, ${jsName}`);
