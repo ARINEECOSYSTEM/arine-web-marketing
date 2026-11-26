@@ -33,3 +33,13 @@ setTimeout(initReels,0);
 })();
 (()=>{const a=document.getElementById('ann');if(!a)return;try{if(localStorage.getItem('arine_ann')==='x')a.remove()}catch(e){}
 document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('[data-ann-x]')){const b=document.getElementById('ann');b&&b.classList.add('off');setTimeout(()=>b&&b.remove(),450);try{localStorage.setItem('arine_ann','x')}catch(e){}}})})();
+
+/* analytics events: sent to GA4 (gtag) and Google Tag Manager (dataLayer) when they are on the page */
+(()=>{window.arineTrack=(name,params={})=>{try{for(const k in params)if(params[k]===undefined)delete params[k];
+ if(typeof window.gtag==='function')window.gtag('event',name,params);
+ if(Array.isArray(window.dataLayer))window.dataLayer.push(Object.assign({event:name},params))}catch(e){}};
+document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('a[href]');if(!a)return;const h=a.getAttribute('href')||'',txt=(a.textContent||'').trim().slice(0,60);
+ if(/app\.arineecosystem\.com\/login/.test(h)){
+  if(a.dataset.plan)window.arineTrack('select_plan',{plan:a.dataset.plan,location:location.pathname});
+  else window.arineTrack(/credit/i.test(txt)?'claim_credits_click':'sign_up_click',{link_text:txt,location:location.pathname})}
+ else if(/^mailto:/.test(h))window.arineTrack('email_click',{location:location.pathname})},true)})();

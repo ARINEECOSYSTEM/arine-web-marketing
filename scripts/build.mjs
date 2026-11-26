@@ -14,6 +14,8 @@ const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
 const SRC = path.join(ROOT, 'src');
 const DIST = path.join(ROOT, 'dist');
 const SITE = 'https://arineecosystem.com';
+const GTM_ID = 'GTM-K4SQGHZZ';   // Google Tag Manager container
+const GA4_ID = 'G-1Y6FQHQX7Q';   // Google Analytics 4 measurement ID
 const read = f => fs.readFileSync(path.join(SRC, f), 'utf8');
 const hash = s => crypto.createHash('sha256').update(s).digest('hex').slice(0, 10);
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -85,6 +87,12 @@ const shell = r => {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Google tag (GA4) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=${GA4_ID}"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${GA4_ID}');</script>
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','${GTM_ID}');</script>
+<!-- End Google Tag Manager -->
 ${h}
 <meta name="arine-mode" content="paths">
 ${r.image ? `<meta property="og:image" content="${SITE}${r.image.src}">\n<meta property="og:image:width" content="${r.image.w}">\n<meta property="og:image:height" content="${r.image.h}">\n<meta property="og:image:alt" content="${esc(r.image.alt)}">\n<meta name="twitter:image" content="${SITE}${r.image.src}">\n<link rel="preload" as="image" href="${r.image.src}" fetchpriority="high">` : `<meta property="og:image" content="${SITE}/icon-512.png">`}
@@ -95,6 +103,9 @@ ${r.image ? `<meta property="og:image" content="${SITE}${r.image.src}">\n<meta p
 <script src="/${jsName}" defer></script>
 </head>
 <body>
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=${GTM_ID}" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
 <header class="nav" id="nav"></header><div class="mm" id="mm"></div><main id="view"></main><footer class="foot" id="foot"></footer>
 </body>
 </html>
@@ -123,7 +134,7 @@ try { chromium = createRequire(import.meta.url)('playwright').chromium; } catch 
 if (chromium) {
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
-  await page.route(/fonts\.(googleapis|gstatic)\.com|development\.arineecosystem\.com/, r => r.abort());
+  await page.route(/fonts\.(googleapis|gstatic)\.com|development\.arineecosystem\.com|googletagmanager\.com|google-analytics\.com/, r => r.abort());
   for (const r of routes) {
     await page.goto(`http://localhost:${port}${r.path}`, { waitUntil: 'load' });
     await page.waitForTimeout(400);

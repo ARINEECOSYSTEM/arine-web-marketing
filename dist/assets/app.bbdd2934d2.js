@@ -981,7 +981,7 @@ function bindForms(){$$('form.form',view).forEach(f=>f.addEventListener('submit'
   'job-form':['Application received.','Thank you for applying. We will contact shortlisted candidates by email.'],
   'cr-form':['Application received.','We review creator applications every week.'],
   'lead-form':[`Thanks, ${n}.`,'We will reach out shortly.']}[f.id]||['Thanks.','We will be in touch.'];
- const done=()=>{f.parentElement.innerHTML=`<div class="ok-box"><svg viewBox="0 0 56 56" aria-hidden="true"><circle cx="28" cy="28" r="26" pathLength="1"/><path d="M17 29l8 8 14-16" pathLength="1"/></svg><h3>${T[0]}</h3><p>${T[1]}</p>${f.id==='su-form'?'<a class="link" href="#meta" style="margin-top:8px">Explore features '+A.ic('arrow')+'</a>':''}</div>`};if(f.hasAttribute('data-mail'))mailSend(f,done);else done()}))}
+ const done=()=>{window.arineTrack&&window.arineTrack(f.id==='job-form'?'job_application':f.id==='ct-form'?'generate_lead':'form_submit',{form_id:f.id,role:f.elements.role?f.elements.role.value:undefined});f.parentElement.innerHTML=`<div class="ok-box"><svg viewBox="0 0 56 56" aria-hidden="true"><circle cx="28" cy="28" r="26" pathLength="1"/><path d="M17 29l8 8 14-16" pathLength="1"/></svg><h3>${T[0]}</h3><p>${T[1]}</p>${f.id==='su-form'?'<a class="link" href="#meta" style="margin-top:8px">Explore features '+A.ic('arrow')+'</a>':''}</div>`};if(f.hasAttribute('data-mail'))mailSend(f,done);else done()}))}
 
 /* one delegated click handler for the whole view */
 view.addEventListener('click',e=>{const t=e.target;let el;
@@ -1057,6 +1057,7 @@ function homeInit(){
   uf.addEventListener('submit',e=>{e.preventDefault();const v=$('#url').value.trim(),ok=/^(https?:\/\/)?([\w-]+\.)+[a-z]{2,}(\/\S*)?$/i.test(v);
    uf.classList.toggle('bad',!ok);msg.textContent=ok?msg.dataset.def:'Enter your store link, like yourstore.com';
    if(!ok){uf.classList.remove('shake');void uf.offsetWidth;uf.classList.add('shake');return}
+   window.arineTrack&&window.arineTrack('store_url_submit',{store_domain:v.replace(/^https?:\/\//i,'').split('/')[0]});
    const dest='https://app.arineecosystem.com/login?website='+encodeURIComponent(v);
    if(PM)location.href=dest;else window.open(dest,'_blank','noopener')});
   uf.addEventListener('input',()=>{if(uf.classList.contains('bad')){uf.classList.remove('bad');msg.textContent=msg.dataset.def}});
@@ -1087,9 +1088,9 @@ const POLR={};for(const p in POLP)POLR[POLP[p]]=p;
 function pathOf(r,pol){if(r.startsWith('blog-'))return '/blogs/'+r.slice(5);if(r==='policy'&&pol&&POLR[pol])return POLR[pol];const s=(A.SEO||{})[r];return s?s[2]:'/'}
 function routeOfPath(p){p=p.replace(/\.html$/,'').replace(/\/+$/,'')||'/';if(p.startsWith('/blogs/'))return 'blog-'+p.slice(7);if(POLP[p]){state.pol=state.pol||POLP[p];return 'policy'}const S=A.SEO||{};for(const k in S)if(S[k][2]===p)return k;return p==='/'?'home':'404'}
 const key=()=>{if(location.hash.length>1){const h=location.hash.slice(1).split('?')[0];if(A.pages[h]||h.startsWith('blog-'))return h}return PM?routeOfPath(location.pathname):'home'};
-function navTo(r,pol){if(PM){history.pushState(null,'',pathOf(r,pol));route()}else location.hash=r}
+function navTo(r,pol){if(PM){setSEO(r);history.pushState(null,'',pathOf(r,pol));route()}else location.hash=r}
 function linkify(root){if(!PM||!root)return;root.querySelectorAll('a[href^="#"]').forEach(a=>{const r=a.getAttribute('href').slice(1);if(!r||!(A.pages[r]||r.startsWith('blog-')))return;a.dataset.r0=r;a.setAttribute('href',pathOf(r,a.dataset.polOpen))})}
-if(PM){document.addEventListener('click',e=>{if(e.defaultPrevented||e.button||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;const a=e.target.closest('a[data-r0]');if(!a||a.target)return;e.preventDefault();if(a.dataset.polOpen)state.pol=a.dataset.polOpen;const r=a.dataset.r0;const same=pathOf(r,a.dataset.polOpen)===location.pathname;if(same&&r!=='policy'){scrollTo({top:0,behavior:reduce?'auto':'smooth'});return}history.pushState(null,'',pathOf(r,a.dataset.polOpen));route()});
+if(PM){document.addEventListener('click',e=>{if(e.defaultPrevented||e.button||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;const a=e.target.closest('a[data-r0]');if(!a||a.target)return;e.preventDefault();if(a.dataset.polOpen)state.pol=a.dataset.polOpen;const r=a.dataset.r0;const same=pathOf(r,a.dataset.polOpen)===location.pathname;if(same&&r!=='policy'){scrollTo({top:0,behavior:reduce?'auto':'smooth'});return}setSEO(r);history.pushState(null,'',pathOf(r,a.dataset.polOpen));route()});
  addEventListener('popstate',()=>route());
  if(location.hash.length>1){const h=location.hash.slice(1);if(A.pages[h]||h.startsWith('blog-'))history.replaceState(null,'',pathOf(h))}
  linkify(nav);linkify(mm);linkify($('#foot'))}
@@ -1176,3 +1177,13 @@ setTimeout(initReels,0);
 })();
 (()=>{const a=document.getElementById('ann');if(!a)return;try{if(localStorage.getItem('arine_ann')==='x')a.remove()}catch(e){}
 document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('[data-ann-x]')){const b=document.getElementById('ann');b&&b.classList.add('off');setTimeout(()=>b&&b.remove(),450);try{localStorage.setItem('arine_ann','x')}catch(e){}}})})();
+
+/* analytics events: sent to GA4 (gtag) and Google Tag Manager (dataLayer) when they are on the page */
+(()=>{window.arineTrack=(name,params={})=>{try{for(const k in params)if(params[k]===undefined)delete params[k];
+ if(typeof window.gtag==='function')window.gtag('event',name,params);
+ if(Array.isArray(window.dataLayer))window.dataLayer.push(Object.assign({event:name},params))}catch(e){}};
+document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('a[href]');if(!a)return;const h=a.getAttribute('href')||'',txt=(a.textContent||'').trim().slice(0,60);
+ if(/app\.arineecosystem\.com\/login/.test(h)){
+  if(a.dataset.plan)window.arineTrack('select_plan',{plan:a.dataset.plan,location:location.pathname});
+  else window.arineTrack(/credit/i.test(txt)?'claim_credits_click':'sign_up_click',{link_text:txt,location:location.pathname})}
+ else if(/^mailto:/.test(h))window.arineTrack('email_click',{location:location.pathname})},true)})();
